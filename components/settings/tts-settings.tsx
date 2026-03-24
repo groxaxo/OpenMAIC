@@ -1,19 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useSettingsStore } from '@/lib/store/settings';
-import { TTS_PROVIDERS, DEFAULT_TTS_VOICES } from '@/lib/audio/constants';
-import type { TTSProviderId } from '@/lib/audio/types';
+import { TTS_PROVIDERS, DEFAULT_TTS_VOICES, getTTSVoices } from '@/lib/audio/constants';
+import type { TTSProviderId, TTSVoiceSource } from '@/lib/audio/types';
 import { Volume2, Loader2, CheckCircle2, XCircle, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createLogger } from '@/lib/logger';
 import { useTTSPreview } from '@/lib/audio/use-tts-preview';
+import { useTtsVoiceCatalog } from '@/lib/audio/use-tts-voice-catalog';
 
 const log = createLogger('TTSSettings');
+const DEFAULT_INWORLD_SOURCE = 'SYSTEM';
 
 interface TTSSettingsProps {
   selectedProviderId: TTSProviderId;
@@ -26,23 +35,106 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
   const ttsSpeed = useSettingsStore((state) => state.ttsSpeed);
   const ttsProvidersConfig = useSettingsStore((state) => state.ttsProvidersConfig);
   const setTTSProviderConfig = useSettingsStore((state) => state.setTTSProviderConfig);
+  const setTTSVoice = useSettingsStore((state) => state.setTTSVoice);
   const activeProviderId = useSettingsStore((state) => state.ttsProviderId);
-
-  // When testing a non-active provider, use that provider's default voice
-  // instead of the active provider's voice (which may be incompatible)
-  const effectiveVoice =
-    selectedProviderId === activeProviderId
-      ? ttsVoice
-      : DEFAULT_TTS_VOICES[selectedProviderId] || 'default';
 
   const ttsProvider = TTS_PROVIDERS[selectedProviderId] ?? TTS_PROVIDERS['openai-tts'];
   const isServerConfigured = !!ttsProvidersConfig[selectedProviderId]?.isServerConfigured;
 
   const [showApiKey, setShowApiKey] = useState(false);
+  const [previewVoiceOverride, setPreviewVoiceOverride] = useState<string | null>(null);
+  const [selectedInworldLanguage, setSelectedInworldLanguage] = useState<string>('all');
+  const [selectedInworldSource, setSelectedInworldSource] = useState<string>('all');
+  const [selectedInworldTag, setSelectedInworldTag] = useState<string>('all');
+  const [inworldSearch, setInworldSearch] = useState('');
   const [testText, setTestText] = useState(t('settings.ttsTestTextDefault'));
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [testMessage, setTestMessage] = useState('');
   const { previewing: testingTTS, startPreview, stopPreview } = useTTSPreview();
+  const {
+    voices: dynamicVoices,
+    loading: loadingVoices,
+    error: voiceLoadError,
+  } = useTtsVoiceCatalog({
+    providerId: selectedProviderId,
+    apiKey: ttsProvidersConfig[selectedProviderId]?.apiKey,
+    baseUrl: ttsProvidersConfig[selectedProviderId]?.baseUrl,
+    isServerConfigured,
+  });
+
+  const availableVoices = useMemo(
+    () => (selectedProviderId === 'inworld-tts' ? dynamicVoices : getTTSVoices(selectedProviderId)),
+    [dynamicVoices, selectedProviderId],
+  );
+
+  const inworldLanguages = useMemo(
+    () =>
+      Array.from(new Set(dynamicVoices.map((voice) => voice.language))).sort((a, b) =>
+        a.localeCompare(b),
+      ),
+    [dynamicVoices],
+  );
+
+  const inworldSources = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          dynamicVoices
+            .map((voice) => voice.source)
+            .filter((source): source is TTSVoiceSource => !!source),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
+    [dynamicVoices],
+  );
+
+  const inworldTags = useMemo(
+    () =>
+      Array.from(new Set(dynamicVoices.flatMap((voice) => voice.tags ?? []))).sort((a, b) =>
+        a.localeCompare(b),
+      ),
+    [dynamicVoices],
+  );
+
+  const filteredVoices = useMemo(() => {
+    if (selectedProviderId !== 'inworld-tts') return availableVoices;
+    const search = inworldSearch.trim().toLowerCase();
+    return availableVoices.filter((voice) => {
+      if (selectedInworldLanguage !== 'all' && voice.language !== selectedInworldLanguage) {
+        return false;
+      }
+      if (selectedInworldSource !== 'all' && voice.source !== selectedInworldSource) {
+        return false;
+      }
+      if (selectedInworldTag !== 'all' && !(voice.tags ?? []).includes(selectedInworldTag)) {
+        return false;
+      }
+      if (!search) return true;
+      return [voice.name, voice.description, voice.langCodeRaw, voice.language, ...(voice.tags ?? [])]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(search);
+    });
+  }, [
+    availableVoices,
+    inworldSearch,
+    selectedInworldLanguage,
+    selectedInworldSource,
+    selectedInworldTag,
+    selectedProviderId,
+  ]);
+
+  const fallbackVoiceId = availableVoices[0]?.id || DEFAULT_TTS_VOICES[selectedProviderId] || 'default';
+  const effectiveVoice =
+    selectedProviderId === activeProviderId ? ttsVoice : previewVoiceOverride || fallbackVoiceId;
+  const selectedVoice = availableVoices.find((voice) => voice.id === effectiveVoice);
+  const visibleVoices = useMemo(() => {
+    if (!selectedVoice || filteredVoices.some((voice) => voice.id === selectedVoice.id)) {
+      return filteredVoices;
+    }
+
+    return [selectedVoice, ...filteredVoices.filter((voice) => voice.id !== selectedVoice.id)];
+  }, [filteredVoices, selectedVoice]);
 
   // Update test text when language changes
   useEffect(() => {
@@ -55,7 +147,46 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
     setShowApiKey(false);
     setTestStatus('idle');
     setTestMessage('');
+    setPreviewVoiceOverride(null);
+    setSelectedInworldLanguage('all');
+    setSelectedInworldSource('all');
+    setSelectedInworldTag('all');
+    setInworldSearch('');
   }, [selectedProviderId, stopPreview]);
+
+  useEffect(() => {
+    if (availableVoices.length === 0) return;
+
+    if (selectedProviderId === activeProviderId) {
+      if (!availableVoices.some((voice) => voice.id === ttsVoice)) {
+        setTTSVoice(availableVoices[0].id);
+      }
+      return;
+    }
+
+    if (
+      !previewVoiceOverride ||
+      !availableVoices.some((voice) => voice.id === previewVoiceOverride)
+    ) {
+      setPreviewVoiceOverride(availableVoices[0].id);
+    }
+  }, [
+    activeProviderId,
+    availableVoices,
+    previewVoiceOverride,
+    selectedProviderId,
+    setTTSVoice,
+    ttsVoice,
+  ]);
+
+  const handleVoiceChange = (voiceId: string) => {
+    if (selectedProviderId === activeProviderId) {
+      setTTSVoice(voiceId);
+      return;
+    }
+
+    setPreviewVoiceOverride(voiceId);
+  };
 
   const handleTestTTS = async () => {
     if (!testText.trim()) return;
@@ -153,21 +284,24 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
               ttsProvidersConfig[selectedProviderId]?.baseUrl || ttsProvider.defaultBaseUrl || '';
             if (!effectiveBaseUrl) return null;
             let endpointPath = '';
-            switch (selectedProviderId) {
-              case 'openai-tts':
-              case 'glm-tts':
-                endpointPath = '/audio/speech';
-                break;
-              case 'azure-tts':
-                endpointPath = '/cognitiveservices/v1';
-                break;
-              case 'qwen-tts':
-                endpointPath = '/services/aigc/multimodal-generation/generation';
-                break;
-              case 'elevenlabs-tts':
-                endpointPath = '/text-to-speech';
-                break;
-            }
+              switch (selectedProviderId) {
+                case 'openai-tts':
+                case 'glm-tts':
+                  endpointPath = '/audio/speech';
+                  break;
+                case 'azure-tts':
+                  endpointPath = '/cognitiveservices/v1';
+                  break;
+                case 'qwen-tts':
+                  endpointPath = '/services/aigc/multimodal-generation/generation';
+                  break;
+                case 'inworld-tts':
+                  endpointPath = '/tts/v1/voice';
+                  break;
+                case 'elevenlabs-tts':
+                  endpointPath = '/text-to-speech';
+                  break;
+              }
             if (!endpointPath) return null;
             return (
               <p className="text-xs text-muted-foreground break-all">
@@ -177,6 +311,118 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
           })()}
         </>
       )}
+
+      <div className="space-y-4">
+        {selectedProviderId === 'inworld-tts' && (
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="space-y-2">
+              <Label className="text-sm">{t('settings.ttsLanguageFilter')}</Label>
+              <Select value={selectedInworldLanguage} onValueChange={setSelectedInworldLanguage}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('settings.allLanguages')}</SelectItem>
+                  {inworldLanguages.map((language) => (
+                    <SelectItem key={language} value={language}>
+                      {language}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm">{t('settings.inworldSourceFilter')}</Label>
+              <Select value={selectedInworldSource} onValueChange={setSelectedInworldSource}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('settings.allSources')}</SelectItem>
+                  {inworldSources.map((source) => (
+                    <SelectItem key={source} value={source}>
+                      {source}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm">{t('settings.inworldTagsFilter')}</Label>
+              <Select value={selectedInworldTag} onValueChange={setSelectedInworldTag}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('settings.allTags')}</SelectItem>
+                  {inworldTags.map((tag) => (
+                    <SelectItem key={tag} value={tag}>
+                      {tag}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm">{t('settings.inworldVoiceSearch')}</Label>
+              <Input
+                value={inworldSearch}
+                onChange={(event) => setInworldSearch(event.target.value)}
+                placeholder={t('settings.inworldVoiceSearch')}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Label className="text-sm">{t('settings.ttsVoice')}</Label>
+          <Select value={selectedVoice ? effectiveVoice : undefined} onValueChange={handleVoiceChange}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {loadingVoices ? (
+                <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                  {t('settings.loadingVoices')}
+                </div>
+              ) : visibleVoices.length > 0 ? (
+                visibleVoices.map((voice) => (
+                  <SelectItem key={voice.id} value={voice.id}>
+                    {voice.name}
+                    {selectedProviderId === 'inworld-tts' &&
+                      ` · ${voice.langCodeRaw || voice.language} · ${voice.source || DEFAULT_INWORLD_SOURCE}`}
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                  {availableVoices.length === 0
+                    ? t('settings.noVoicesAvailable')
+                    : t('settings.noVoicesMatchFilter')}
+                </div>
+              )}
+            </SelectContent>
+          </Select>
+          {voiceLoadError && (
+            <p className="text-xs text-red-600 dark:text-red-400 break-all">
+              {t('settings.fetchVoicesFailed')}: {voiceLoadError}
+            </p>
+          )}
+          {selectedVoice && (
+            <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">{selectedVoice.name}</p>
+              <p>
+                {(selectedVoice.langCodeRaw || selectedVoice.language) ?? ''}
+                {selectedVoice.source ? ` · ${selectedVoice.source}` : ` · ${DEFAULT_INWORLD_SOURCE}`}
+              </p>
+              {selectedVoice.description && <p>{selectedVoice.description}</p>}
+              {!!selectedVoice.tags?.length && <p>{selectedVoice.tags.join(', ')}</p>}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Test TTS */}
       <div className="space-y-2">

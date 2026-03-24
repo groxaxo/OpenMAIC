@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Volume2, Play, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -16,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useSettingsStore } from '@/lib/store/settings';
-import { getTTSVoices } from '@/lib/audio/constants';
+import { useTtsVoiceCatalog } from '@/lib/audio/use-tts-voice-catalog';
 import { useTTSPreview } from '@/lib/audio/use-tts-preview';
 
 /** Extract the English name from voice name format "ChineseName (English)" */
@@ -40,8 +40,13 @@ export function TtsConfigPopover() {
   const ttsSpeed = useSettingsStore((s) => s.ttsSpeed);
   const ttsProvidersConfig = useSettingsStore((s) => s.ttsProvidersConfig);
   const setTTSVoice = useSettingsStore((s) => s.setTTSVoice);
-
-  const voices = getTTSVoices(ttsProviderId);
+  const providerConfig = ttsProvidersConfig[ttsProviderId];
+  const { voices, loading } = useTtsVoiceCatalog({
+    providerId: ttsProviderId,
+    apiKey: providerConfig?.apiKey,
+    baseUrl: providerConfig?.baseUrl,
+    isServerConfigured: providerConfig?.isServerConfigured,
+  });
   const localizedVoices = useMemo(
     () =>
       voices.map((v) => ({
@@ -50,6 +55,14 @@ export function TtsConfigPopover() {
       })),
     [voices, locale],
   );
+  const localizedVoiceIds = useMemo(() => new Set(localizedVoices.map((voice) => voice.id)), [localizedVoices]);
+
+  useEffect(() => {
+    if (localizedVoices.length === 0) return;
+    if (!localizedVoiceIds.has(ttsVoice)) {
+      setTTSVoice(localizedVoices[0].id);
+    }
+  }, [localizedVoiceIds, localizedVoices, setTTSVoice, ttsVoice]);
 
   const pillCls =
     'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all cursor-pointer select-none whitespace-nowrap border';
@@ -150,11 +163,21 @@ export function TtsConfigPopover() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {localizedVoices.map((v) => (
-                    <SelectItem key={v.id} value={v.id} className="text-xs">
-                      {v.displayName}
-                    </SelectItem>
-                  ))}
+                  {loading ? (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                      {t('settings.loadingVoices')}
+                    </div>
+                  ) : localizedVoices.length > 0 ? (
+                    localizedVoices.map((v) => (
+                      <SelectItem key={v.id} value={v.id} className="text-xs">
+                        {v.displayName}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                      {t('settings.noVoicesAvailable')}
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
               <button

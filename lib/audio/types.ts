@@ -83,11 +83,14 @@ export type TTSProviderId =
   | 'glm-tts'
   | 'qwen-tts'
   | 'elevenlabs-tts'
+  | 'inworld-tts'
   | 'browser-native-tts';
 // Add new TTS providers below (uncomment and modify):
 // | 'fish-audio-tts'
 // | 'cartesia-tts'
 // | 'playht-tts'
+
+export type TTSVoiceSource = 'SYSTEM' | 'IVC' | 'PVC';
 
 /**
  * Voice information for TTS
@@ -99,6 +102,9 @@ export interface TTSVoiceInfo {
   localeName?: string; // Language name in its native script (e.g., "中文（简体，中国）", "日本語")
   gender?: 'male' | 'female' | 'neutral';
   description?: string;
+  langCodeRaw?: string;
+  source?: TTSVoiceSource;
+  tags?: string[];
 }
 
 /**

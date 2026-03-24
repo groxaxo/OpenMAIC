@@ -606,6 +606,16 @@ export const TTS_PROVIDERS: Record<TTSProviderId, TTSProviderConfig> = {
     supportedFormats: ['mp3', 'wav', 'pcm'],
   },
 
+  'inworld-tts': {
+    id: 'inworld-tts',
+    name: 'Inworld TTS',
+    requiresApiKey: true,
+    defaultBaseUrl: 'https://api.inworld.ai',
+    voices: [],
+    supportedFormats: ['mp3', 'wav', 'ogg', 'basic'],
+    speedRange: { min: 0.5, max: 1.5, default: 1.0 },
+  },
+
   'elevenlabs-tts': {
     id: 'elevenlabs-tts',
     name: 'ElevenLabs TTS',
@@ -895,6 +905,7 @@ export const DEFAULT_TTS_VOICES: Record<TTSProviderId, string> = {
   'azure-tts': 'zh-CN-XiaoxiaoNeural',
   'glm-tts': 'tongtong',
   'qwen-tts': 'Cherry',
+  'inworld-tts': 'default',
   'elevenlabs-tts': 'EXAVITQu4vr4xnSDxMaL',
   'browser-native-tts': 'default',
 };
