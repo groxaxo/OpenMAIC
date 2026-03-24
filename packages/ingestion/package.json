@@ -1,0 +1,19 @@
+{
+  "name": "@openmaic/ingestion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Document ingestion, chunking, and citation pipeline for OpenMAIC",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.3.5",
+    "@openmaic/scene-schema": "workspace:*",
+    "nanoid": "^5.1.6"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

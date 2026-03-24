@@ -1,0 +1,20 @@
+{
+  "name": "@openmaic/gateway-realtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WebSocket/SSE realtime classroom gateway",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@openmaic/scene-schema": "workspace:*",
+    "@openmaic/core-domain": "workspace:*",
+    "@openmaic/playback-engine": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "typescript": "^5",
+    "@types/node": "^20"
+  }
+}

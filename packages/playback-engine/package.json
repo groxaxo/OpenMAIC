@@ -1,0 +1,18 @@
+{
+  "name": "@openmaic/playback-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Event-sourced playback timeline engine for OpenMAIC",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.3.5",
+    "@openmaic/scene-schema": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
