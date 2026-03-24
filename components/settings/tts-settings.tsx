@@ -22,6 +22,7 @@ import { useTTSPreview } from '@/lib/audio/use-tts-preview';
 import { useTtsVoiceCatalog } from '@/lib/audio/use-tts-voice-catalog';
 
 const log = createLogger('TTSSettings');
+const DEFAULT_INWORLD_SOURCE = 'SYSTEM';
 
 interface TTSSettingsProps {
   selectedProviderId: TTSProviderId;
@@ -123,14 +124,17 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
     selectedProviderId,
   ]);
 
+  const fallbackVoiceId = availableVoices[0]?.id || DEFAULT_TTS_VOICES[selectedProviderId] || 'default';
   const effectiveVoice =
-    selectedProviderId === activeProviderId
-      ? ttsVoice
-      : previewVoiceOverride || filteredVoices[0]?.id || DEFAULT_TTS_VOICES[selectedProviderId] || 'default';
+    selectedProviderId === activeProviderId ? ttsVoice : previewVoiceOverride || fallbackVoiceId;
+  const selectedVoice = availableVoices.find((voice) => voice.id === effectiveVoice);
+  const visibleVoices = useMemo(() => {
+    if (!selectedVoice || filteredVoices.some((voice) => voice.id === selectedVoice.id)) {
+      return filteredVoices;
+    }
 
-  const selectedVoice =
-    filteredVoices.find((voice) => voice.id === effectiveVoice) ||
-    availableVoices.find((voice) => voice.id === effectiveVoice);
+    return [selectedVoice, ...filteredVoices.filter((voice) => voice.id !== selectedVoice.id)];
+  }, [filteredVoices, selectedVoice]);
 
   // Update test text when language changes
   useEffect(() => {
@@ -151,21 +155,24 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
   }, [selectedProviderId, stopPreview]);
 
   useEffect(() => {
-    if (filteredVoices.length === 0) return;
+    if (availableVoices.length === 0) return;
 
     if (selectedProviderId === activeProviderId) {
-      if (!filteredVoices.some((voice) => voice.id === ttsVoice)) {
-        setTTSVoice(filteredVoices[0].id);
+      if (!availableVoices.some((voice) => voice.id === ttsVoice)) {
+        setTTSVoice(availableVoices[0].id);
       }
       return;
     }
 
-    if (!previewVoiceOverride || !filteredVoices.some((voice) => voice.id === previewVoiceOverride)) {
-      setPreviewVoiceOverride(filteredVoices[0].id);
+    if (
+      !previewVoiceOverride ||
+      !availableVoices.some((voice) => voice.id === previewVoiceOverride)
+    ) {
+      setPreviewVoiceOverride(availableVoices[0].id);
     }
   }, [
     activeProviderId,
-    filteredVoices,
+    availableVoices,
     previewVoiceOverride,
     selectedProviderId,
     setTTSVoice,
@@ -372,7 +379,7 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
 
         <div className="space-y-2">
           <Label className="text-sm">{t('settings.ttsVoice')}</Label>
-          <Select value={effectiveVoice} onValueChange={handleVoiceChange}>
+          <Select value={selectedVoice ? effectiveVoice : undefined} onValueChange={handleVoiceChange}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -381,12 +388,12 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
                 <div className="px-2 py-1.5 text-sm text-muted-foreground">
                   {t('settings.loadingVoices')}
                 </div>
-              ) : filteredVoices.length > 0 ? (
-                filteredVoices.map((voice) => (
+              ) : visibleVoices.length > 0 ? (
+                visibleVoices.map((voice) => (
                   <SelectItem key={voice.id} value={voice.id}>
                     {voice.name}
                     {selectedProviderId === 'inworld-tts' &&
-                      ` · ${voice.langCodeRaw || voice.language} · ${voice.source || 'SYSTEM'}`}
+                      ` · ${voice.langCodeRaw || voice.language} · ${voice.source || DEFAULT_INWORLD_SOURCE}`}
                   </SelectItem>
                 ))
               ) : (
@@ -408,7 +415,7 @@ export function TTSSettings({ selectedProviderId }: TTSSettingsProps) {
               <p className="font-medium text-foreground">{selectedVoice.name}</p>
               <p>
                 {(selectedVoice.langCodeRaw || selectedVoice.language) ?? ''}
-                {selectedVoice.source ? ` · ${selectedVoice.source}` : ''}
+                {selectedVoice.source ? ` · ${selectedVoice.source}` : ` · ${DEFAULT_INWORLD_SOURCE}`}
               </p>
               {selectedVoice.description && <p>{selectedVoice.description}</p>}
               {!!selectedVoice.tags?.length && <p>{selectedVoice.tags.join(', ')}</p>}

@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import type { TTSVoiceInfo } from './types';
 
 export const INWORLD_DEFAULT_BASE_URL = 'https://api.inworld.ai';
@@ -75,7 +76,15 @@ type CachedVoiceList = {
 };
 
 const voiceCache = new Map<string, CachedVoiceList>();
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_TTL_MILLISECONDS = 5 * 60 * 1000;
+
+function purgeExpiredVoiceCache(now: number): void {
+  for (const [key, value] of voiceCache.entries()) {
+    if (value.expiresAt <= now) {
+      voiceCache.delete(key);
+    }
+  }
+}
 
 function getInworldAuthHeader(apiKey: string): string {
   return apiKey.startsWith('Basic ') ? apiKey : `Basic ${apiKey}`;
@@ -133,7 +142,7 @@ function filterInworldVoices(voices: TTSVoiceInfo[], languages?: string[]): TTSV
 }
 
 function getCacheKey(apiKey: string, baseUrl: string): string {
-  return `${baseUrl}::${apiKey}`;
+  return createHash('sha256').update(`${baseUrl}::${apiKey}`).digest('hex');
 }
 
 export async function listInworldVoices(input: {
@@ -144,6 +153,7 @@ export async function listInworldVoices(input: {
   const baseUrl = input.baseUrl?.trim().replace(/\/+$/, '') || INWORLD_DEFAULT_BASE_URL;
   const cacheKey = getCacheKey(input.apiKey, baseUrl);
   const now = Date.now();
+  purgeExpiredVoiceCache(now);
   const cached = voiceCache.get(cacheKey);
 
   if (cached && cached.expiresAt > now) {
@@ -178,7 +188,7 @@ export async function listInworldVoices(input: {
 
   const data = (await response.json()) as InworldListVoicesResponse;
   const voices = sortInworldVoices((data.voices ?? []).map(mapInworldVoiceToTtsVoice));
-  voiceCache.set(cacheKey, { voices, expiresAt: now + CACHE_TTL_MS });
+  voiceCache.set(cacheKey, { voices, expiresAt: now + CACHE_TTL_MILLISECONDS });
   return filterInworldVoices(voices, input.languages);
 }
 

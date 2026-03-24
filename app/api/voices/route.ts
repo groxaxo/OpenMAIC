@@ -10,14 +10,18 @@ const log = createLogger('Voices API');
 export const maxDuration = 30;
 
 function getRequestedLanguages(searchParams: URLSearchParams): string[] {
-  const values = [
-    ...searchParams.getAll('language'),
-    ...searchParams.getAll('languages'),
-    ...(searchParams.get('language')?.split(',') ?? []),
-    ...(searchParams.get('languages')?.split(',') ?? []),
-  ];
-
-  return values.map((value) => value.trim()).filter(Boolean);
+  const values = new Set<string>();
+  for (const key of ['language', 'languages'] as const) {
+    for (const rawValue of searchParams.getAll(key)) {
+      for (const value of rawValue.split(',')) {
+        const normalized = value.trim();
+        if (normalized) {
+          values.add(normalized);
+        }
+      }
+    }
+  }
+  return [...values];
 }
 
 export async function GET(req: NextRequest) {

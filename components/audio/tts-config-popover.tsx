@@ -55,13 +55,14 @@ export function TtsConfigPopover() {
       })),
     [voices, locale],
   );
+  const localizedVoiceIds = useMemo(() => new Set(localizedVoices.map((voice) => voice.id)), [localizedVoices]);
 
   useEffect(() => {
     if (localizedVoices.length === 0) return;
-    if (!localizedVoices.some((voice) => voice.id === ttsVoice)) {
+    if (!localizedVoiceIds.has(ttsVoice)) {
       setTTSVoice(localizedVoices[0].id);
     }
-  }, [localizedVoices, setTTSVoice, ttsVoice]);
+  }, [localizedVoiceIds, localizedVoices, setTTSVoice, ttsVoice]);
 
   const pillCls =
     'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all cursor-pointer select-none whitespace-nowrap border';

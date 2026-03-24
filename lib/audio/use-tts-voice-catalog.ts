@@ -24,7 +24,7 @@ export function useTtsVoiceCatalog({
   isServerConfigured,
 }: UseTtsVoiceCatalogInput): UseTtsVoiceCatalogResult {
   const staticVoices = useMemo(() => getTTSVoices(providerId), [providerId]);
-  const [dynamicVoices, setDynamicVoices] = useState<TTSVoiceInfo[]>(staticVoices);
+  const [dynamicVoices, setDynamicVoices] = useState<TTSVoiceInfo[]>(() => getTTSVoices(providerId));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +46,7 @@ export function useTtsVoiceCatalog({
     }
 
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(async () => {
+    const runFetch = async () => {
       setLoading(true);
       setError(null);
 
@@ -78,6 +78,9 @@ export function useTtsVoiceCatalog({
           setLoading(false);
         }
       }
+    };
+    const timeoutId = window.setTimeout(() => {
+      void runFetch();
     }, 250);
 
     return () => {
