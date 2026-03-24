@@ -129,8 +129,9 @@ export class TimelinePlayer {
       handlers.forEach((h) => {
         try {
           h(event);
-        } catch {
-          // swallow handler errors to keep playback running
+        } catch (err) {
+          // Log but do not re-throw — a failing handler must not stop playback
+          console.warn('[TimelinePlayer] Handler error for event "%s":', event.type, err);
         }
       });
     }
