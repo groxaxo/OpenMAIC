@@ -92,6 +92,12 @@
 
 import type { TTSModelConfig } from './types';
 import { TTS_PROVIDERS } from './constants';
+import {
+  INWORLD_DEFAULT_BASE_URL,
+  listInworldVoices,
+  mapInworldEncodingToFormat,
+  pickDefaultInworldVoice,
+} from './inworld';
 
 /**
  * Result of TTS generation
@@ -130,6 +136,9 @@ export async function generateTTS(
 
     case 'qwen-tts':
       return await generateQwenTTS(config, text);
+
+    case 'inworld-tts':
+      return await generateInworldTTS(config, text);
 
     case 'elevenlabs-tts':
       return await generateElevenLabsTTS(config, text);
@@ -369,6 +378,74 @@ async function generateElevenLabsTTS(
   return {
     audio: new Uint8Array(arrayBuffer),
     format: requestedFormat,
+  };
+}
+
+/**
+ * Inworld TTS implementation
+ */
+async function generateInworldTTS(
+  config: TTSModelConfig,
+  text: string,
+): Promise<TTSGenerationResult> {
+  const baseUrl =
+    config.baseUrl?.replace(/\/+$/, '') ||
+    TTS_PROVIDERS['inworld-tts'].defaultBaseUrl ||
+    INWORLD_DEFAULT_BASE_URL;
+  const audioEncoding = 'MP3' as const;
+  let voiceId = config.voice;
+
+  if (!voiceId || voiceId === 'default') {
+    const voices = await listInworldVoices({
+      apiKey: config.apiKey!,
+      baseUrl,
+    });
+    voiceId = pickDefaultInworldVoice(voices)?.id || voiceId;
+  }
+
+  if (!voiceId || voiceId === 'default') {
+    throw new Error('No Inworld voice is available for synthesis');
+  }
+
+  const response = await fetch(`${baseUrl}/tts/v1/voice`, {
+    method: 'POST',
+    headers: {
+      Authorization: config.apiKey!.startsWith('Basic ')
+        ? config.apiKey!
+        : `Basic ${config.apiKey!}`,
+      'Content-Type': 'application/json; charset=utf-8',
+    },
+    body: JSON.stringify({
+      text,
+      voiceId,
+      modelId: 'inworld-tts-1.5-max',
+      audioConfig: {
+        audioEncoding,
+        sampleRateHertz: 48000,
+        speakingRate: config.speed ?? 1.0,
+      },
+      temperature: 1.0,
+    }),
+    redirect: 'manual',
+  });
+
+  if (response.status >= 300 && response.status < 400) {
+    throw new Error('Inworld TTS redirects are not allowed');
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => response.statusText);
+    throw new Error(`Inworld TTS API error: ${errorText || response.statusText}`);
+  }
+
+  const data = (await response.json()) as { audioContent?: string };
+  if (!data.audioContent) {
+    throw new Error('Inworld TTS API returned no audio content');
+  }
+
+  return {
+    audio: new Uint8Array(Buffer.from(data.audioContent, 'base64')),
+    format: mapInworldEncodingToFormat(audioEncoding),
   };
 }
 

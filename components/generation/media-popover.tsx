@@ -29,6 +29,7 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { useSettingsStore } from '@/lib/store/settings';
+import { useTtsVoiceCatalog } from '@/lib/audio/use-tts-voice-catalog';
 import { useTTSPreview } from '@/lib/audio/use-tts-preview';
 import { IMAGE_PROVIDERS } from '@/lib/media/image-providers';
 import { VIDEO_PROVIDERS } from '@/lib/media/video-providers';
@@ -88,6 +89,7 @@ function getTTSProviderName(providerId: TTSProviderId, t: (key: string) => strin
     'azure-tts': t('settings.providerAzureTTS'),
     'glm-tts': t('settings.providerGLMTTS'),
     'qwen-tts': t('settings.providerQwenTTS'),
+    'inworld-tts': t('settings.providerInworldTTS'),
     'elevenlabs-tts': t('settings.providerElevenLabsTTS'),
     'browser-native-tts': t('settings.providerBrowserNativeTTS'),
   };
@@ -166,6 +168,13 @@ export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
   ) => !needsKey || !!configs[id]?.apiKey || !!configs[id]?.isServerConfigured;
 
   const ttsSpeedRange = TTS_PROVIDERS[ttsProviderId]?.speedRange;
+  const currentTTSProviderConfig = ttsProvidersConfig[ttsProviderId];
+  const { voices: dynamicTTSVoices } = useTtsVoiceCatalog({
+    providerId: ttsProviderId,
+    apiKey: currentTTSProviderConfig?.apiKey,
+    baseUrl: currentTTSProviderConfig?.baseUrl,
+    isServerConfigured: currentTTSProviderConfig?.isServerConfigured,
+  });
 
   // ─── Dynamic browser voices ───
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -248,7 +257,7 @@ export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
         groupName: providerName,
         groupIcon: p.icon,
         available: true,
-        items: getTTSVoices(p.id).map((v) => ({
+        items: (p.id === 'inworld-tts' ? dynamicTTSVoices : getTTSVoices(p.id)).map((v) => ({
           id: v.id,
           name: getVoiceDisplayName(v.name, locale),
         })),
@@ -256,7 +265,7 @@ export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
     }
 
     return groups;
-  }, [ttsProvidersConfig, locale, browserVoices, t]);
+  }, [ttsProvidersConfig, locale, browserVoices, dynamicTTSVoices, t]);
 
   // TTS preview
   const handlePreview = useCallback(async () => {

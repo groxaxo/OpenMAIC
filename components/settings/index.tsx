@@ -121,6 +121,7 @@ function getTTSProviderName(providerId: TTSProviderId, t: (key: string) => strin
     'azure-tts': t('settings.providerAzureTTS'),
     'glm-tts': t('settings.providerGLMTTS'),
     'qwen-tts': t('settings.providerQwenTTS'),
+    'inworld-tts': t('settings.providerInworldTTS'),
     'elevenlabs-tts': t('settings.providerElevenLabsTTS'),
     'browser-native-tts': t('settings.providerBrowserNativeTTS'),
   };
