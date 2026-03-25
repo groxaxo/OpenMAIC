@@ -2,7 +2,7 @@
 
 ## Critical Boundary
 
-OpenMAIC generation does not automatically reuse the OpenClaw agent's current model or API key.
+OpenMAIC generation does not automatically reuse the OpenClaw/OpenJaw agent's current model or API key.
 
 OpenMAIC server APIs resolve their own model and provider keys from OpenMAIC server-side config.
 

@@ -242,7 +242,7 @@ Choose a role and collaborate with AI agents on structured projects with milesto
 <tr>
 <td valign="top">
 
-OpenMAIC integrates with [OpenClaw](https://github.com/openclaw/openclaw) — a personal AI assistant that connects to messaging platforms you already use (Feishu, Slack, Discord, Telegram, WhatsApp, etc.). With this integration, you can **generate and view interactive classrooms directly from your chat app** without ever touching a terminal.
+OpenMAIC integrates with [OpenClaw](https://github.com/openclaw/openclaw) / [OpenJaw](https://github.com/groxaxo/openjaw) — a personal AI assistant that connects to messaging platforms you already use (Feishu, Slack, Discord, Telegram, WhatsApp, etc.). With this integration, you can **generate and view interactive classrooms directly from your chat app** without ever touching a terminal.
 
 </td>
 <td width="360" valign="top">
@@ -269,11 +269,16 @@ Every step asks for your confirmation first. No black-box automation.
 clawhub install openmaic
 ```
 
-Or copy manually:
+Or copy manually (for OpenClaw or OpenJaw):
 
 ```bash
+# OpenClaw
 mkdir -p ~/.openclaw/skills
 cp -R /path/to/OpenMAIC/skills/openmaic ~/.openclaw/skills/openmaic
+
+# OpenJaw
+mkdir -p ~/.openjaw/skills
+cp -R /path/to/OpenMAIC/skills/openmaic ~/.openjaw/skills/openmaic
 ```
 
 </td></tr></table>
@@ -288,7 +293,7 @@ cp -R /path/to/OpenMAIC/skills/openmaic ~/.openclaw/skills/openmaic
 | **Provider Keys** | Recommend a provider path; you edit `.env.local` yourself |
 | **Generation** | Submit an async generation job and poll until it completes |
 
-Optional config in `~/.openclaw/openclaw.json`:
+Optional config in `~/.openclaw/openclaw.json` or `~/.openjaw/openjaw.json`:
 
 ```jsonc
 {

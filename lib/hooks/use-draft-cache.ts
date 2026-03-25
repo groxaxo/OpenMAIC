@@ -17,25 +17,26 @@ export function useDraftCache<T>({
   key,
   debounceMs = 500,
 }: UseDraftCacheOptions): UseDraftCacheReturn<T> {
-  const [cachedValue] = useState<T | undefined>(() => {
-    if (typeof window === 'undefined') return undefined;
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw !== null) {
-        return JSON.parse(raw) as T;
-      }
-    } catch {
-      /* ignore parse errors */
-    }
-    return undefined;
-  });
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [cachedValue, setCachedValue] = useState<T | undefined>(undefined);
+  const timerRef = useRef<ReturnType<typeof NodeJS.Timeout> | null>(null);
   const pendingValueRef = useRef<T | undefined>(undefined);
   const keyRef = useRef(key);
 
+  // Load initial value from localStorage (client-only)
+  /* eslint-disable react-hooks/set-state-in-effect -- localStorage hydration must happen after mount */
   useEffect(() => {
-    keyRef.current = key;
+    if (typeof window === 'undefined') return;
+    const raw = localStorage.getItem(key);
+    if (raw !== null) {
+      try {
+        const cached = JSON.parse(raw) as T;
+        setCachedValue(cached);
+      } catch {
+        // ignore parse errors
+      }
+    }
   }, [key]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const flushPending = useCallback(() => {
     if (timerRef.current !== null) {

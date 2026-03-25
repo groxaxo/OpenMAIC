@@ -26,7 +26,7 @@ Use this as a guided, confirmation-heavy SOP. Do not compress the whole setup in
 
 ## Optional Skill Config
 
-If present, read defaults from `~/.openclaw/openclaw.json` under:
+If present, read defaults from `~/.openclaw/openclaw.json` or `~/.openjaw/openjaw.json` under:
 
 ```jsonc
 {

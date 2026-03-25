@@ -961,21 +961,41 @@ export const useSettingsStore = create<SettingsState>()(
                 }
               }
 
-              // LLM auto-select: when modelId is empty
+              // LLM auto-select: when modelId is empty or the current selection
+              // is not allowed by the server-configured provider list.
               let autoProviderId: ProviderId | undefined;
               let autoModelId: string | undefined;
-              if (!state.modelId) {
-                for (const [pid, cfg] of Object.entries(newProvidersConfig)) {
-                  if (cfg.isServerConfigured) {
-                    // Prefer server-restricted models, fall back to built-in list
-                    const serverModels = cfg.serverModels;
-                    const modelId = serverModels?.length
-                      ? serverModels[0]
-                      : PROVIDERS[pid as ProviderId]?.models[0]?.id;
-                    if (modelId) {
-                      autoProviderId = pid as ProviderId;
-                      autoModelId = modelId;
-                      break;
+              const currentProviderConfig = newProvidersConfig[state.providerId];
+              const currentServerModels = currentProviderConfig?.serverModels;
+              const currentModelAllowed =
+                !currentProviderConfig?.isServerConfigured ||
+                !currentServerModels?.length ||
+                currentServerModels.includes(state.modelId);
+
+              if (!state.modelId || !currentModelAllowed) {
+                if (currentProviderConfig?.isServerConfigured) {
+                  const preferredModelId = currentServerModels?.length
+                    ? currentServerModels[0]
+                    : currentProviderConfig.models[0]?.id;
+                  if (preferredModelId) {
+                    autoProviderId = state.providerId;
+                    autoModelId = preferredModelId;
+                  }
+                }
+
+                if (!autoModelId) {
+                  for (const [pid, cfg] of Object.entries(newProvidersConfig)) {
+                    if (cfg.isServerConfigured) {
+                      // Prefer server-restricted models, fall back to built-in list
+                      const serverModels = cfg.serverModels;
+                      const modelId = serverModels?.length
+                        ? serverModels[0]
+                        : PROVIDERS[pid as ProviderId]?.models[0]?.id;
+                      if (modelId) {
+                        autoProviderId = pid as ProviderId;
+                        autoModelId = modelId;
+                        break;
+                      }
                     }
                   }
                 }
