@@ -21,10 +21,17 @@ import { useSettingsStore } from '@/lib/store/settings';
 import { useStageStore } from '@/lib/store/stage';
 import { useMediaGenerationStore } from '@/lib/store/media-generation';
 import { useExportPPTX } from '@/lib/export/use-export-pptx';
+import type { Locale } from '@/lib/i18n';
 
 interface HeaderProps {
   readonly currentSceneTitle: string;
 }
+
+const LOCALE_OPTIONS: Array<{ value: Locale; label: string; short: string }> = [
+  { value: 'zh-CN', label: '简体中文', short: 'CN' },
+  { value: 'en-US', label: 'English', short: 'EN' },
+  { value: 'es-ES', label: 'Español', short: 'ES' },
+];
 
 export function Header({ currentSceneTitle }: HeaderProps) {
   const { t, locale, setLocale } = useI18n();
@@ -113,36 +120,26 @@ export function Header({ currentSceneTitle }: HeaderProps) {
               }}
               className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 hover:shadow-sm transition-all"
             >
-              {locale === 'zh-CN' ? 'CN' : 'EN'}
+              {LOCALE_OPTIONS.find((option) => option.value === locale)?.short ?? 'CN'}
             </button>
             {languageOpen && (
               <div className="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden z-50 min-w-[120px]">
-                <button
-                  onClick={() => {
-                    setLocale('zh-CN');
-                    setLanguageOpen(false);
-                  }}
-                  className={cn(
-                    'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors',
-                    locale === 'zh-CN' &&
-                      'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                  )}
-                >
-                  简体中文
-                </button>
-                <button
-                  onClick={() => {
-                    setLocale('en-US');
-                    setLanguageOpen(false);
-                  }}
-                  className={cn(
-                    'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors',
-                    locale === 'en-US' &&
-                      'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                  )}
-                >
-                  English
-                </button>
+                {LOCALE_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setLocale(option.value);
+                      setLanguageOpen(false);
+                    }}
+                    className={cn(
+                      'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors',
+                      locale === option.value &&
+                        'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
             )}
           </div>

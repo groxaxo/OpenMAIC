@@ -225,6 +225,37 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     ],
   },
 
+  opencode: {
+    id: 'opencode',
+    name: 'OpenCode',
+    type: 'openai',
+    defaultBaseUrl: 'https://api.opencode.ai/v1',
+    requiresApiKey: false,
+    models: [
+      {
+        id: 'gpt-5-nano',
+        name: 'GPT-5 Nano',
+        contextWindow: 128000,
+        outputWindow: 4096,
+        capabilities: { streaming: true, tools: true, vision: true },
+      },
+      {
+        id: 'gemini-2.5-flash',
+        name: 'Gemini 2.5 Flash',
+        contextWindow: 1048576,
+        outputWindow: 65536,
+        capabilities: { streaming: true, tools: true, vision: true },
+      },
+      {
+        id: 'gemini-3-flash',
+        name: 'Gemini 3 Flash',
+        contextWindow: 1048576,
+        outputWindow: 65536,
+        capabilities: { streaming: true, tools: true, vision: true },
+      },
+    ],
+  },
+
   anthropic: {
     id: 'anthropic',
     name: 'Claude',

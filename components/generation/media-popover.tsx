@@ -98,7 +98,7 @@ function getTTSProviderName(providerId: TTSProviderId, t: (key: string) => strin
 
 /** Extract the English name from voice name format "ChineseName (English)" */
 function getVoiceDisplayName(name: string, lang: string): string {
-  if (lang === 'en-US') {
+  if (lang !== 'zh-CN') {
     const match = name.match(/\(([^)]+)\)/);
     return match ? match[1] : name;
   }
