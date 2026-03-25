@@ -21,15 +21,22 @@ import type { WebSearchProviderId } from '@/lib/web-search/types';
 import type { ProviderId } from '@/lib/ai/providers';
 import type { SettingsSection } from '@/lib/types/settings';
 import { MediaPopover } from '@/components/generation/media-popover';
+import type { CourseLanguage } from '@/lib/types/generation';
 
 // ─── Constants ───────────────────────────────────────────────
 const MAX_PDF_SIZE_MB = 50;
 const MAX_PDF_SIZE_BYTES = MAX_PDF_SIZE_MB * 1024 * 1024;
+const LANGUAGE_CYCLE: CourseLanguage[] = ['zh-CN', 'en-US', 'es-ES'];
+const LANGUAGE_LABELS: Record<CourseLanguage, string> = {
+  'zh-CN': '中文',
+  'en-US': 'EN',
+  'es-ES': 'ES',
+};
 
 // ─── Types ───────────────────────────────────────────────────
 export interface GenerationToolbarProps {
-  language: 'zh-CN' | 'en-US';
-  onLanguageChange: (lang: 'zh-CN' | 'en-US') => void;
+  language: CourseLanguage;
+  onLanguageChange: (lang: CourseLanguage) => void;
   webSearch: boolean;
   onWebSearchChange: (v: boolean) => void;
   onSettingsOpen: (section?: SettingsSection) => void;
@@ -361,11 +368,15 @@ export function GenerationToolbar({
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            onClick={() => onLanguageChange(language === 'zh-CN' ? 'en-US' : 'zh-CN')}
+            onClick={() =>
+              onLanguageChange(
+                LANGUAGE_CYCLE[(LANGUAGE_CYCLE.indexOf(language) + 1) % LANGUAGE_CYCLE.length],
+              )
+            }
             className={pillMuted}
           >
             <Globe className="size-3.5" />
-            <span>{language === 'zh-CN' ? '中文' : 'EN'}</span>
+            <span>{LANGUAGE_LABELS[language]}</span>
           </button>
         </TooltipTrigger>
         <TooltipContent>{t('toolbar.languageHint')}</TooltipContent>

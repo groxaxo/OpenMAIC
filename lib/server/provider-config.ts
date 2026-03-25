@@ -39,6 +39,7 @@ interface ServerConfig {
 
 const LLM_ENV_MAP: Record<string, string> = {
   OPENAI: 'openai',
+  OPENCODE: 'opencode',
   ANTHROPIC: 'anthropic',
   GOOGLE: 'google',
   DEEPSEEK: 'deepseek',

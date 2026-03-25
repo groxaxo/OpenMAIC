@@ -139,3 +139,74 @@ export const chatEnUS = {
     stopListening: 'Stop recording',
   },
 } as const;
+
+export const chatEsES = {
+  chat: {
+    lecture: 'Clase',
+    noConversations: 'Sin conversaciones',
+    startConversation: 'Escribe un mensaje para empezar a chatear',
+    noMessages: 'Aún no hay mensajes',
+    ended: 'finalizado',
+    unknown: 'Desconocido',
+    stopDiscussion: 'Detener discusión',
+    endQA: 'Finalizar preguntas y respuestas',
+    tabs: {
+      lecture: 'Notas',
+      chat: 'Chat',
+    },
+    lectureNotes: {
+      empty: 'Las notas aparecerán aquí después de reproducir la clase',
+      emptyHint: 'Pulsa reproducir para comenzar la clase',
+      pageLabel: 'Página {n}',
+      currentPage: 'Actual',
+    },
+    badge: {
+      qa: 'P&R',
+      discussion: 'DISC',
+      lecture: 'CLS',
+    },
+  },
+  actions: {
+    names: {
+      spotlight: 'Foco',
+      laser: 'Láser',
+      wb_open: 'Abrir pizarra',
+      wb_draw_text: 'Texto en pizarra',
+      wb_draw_shape: 'Forma en pizarra',
+      wb_draw_chart: 'Gráfico en pizarra',
+      wb_draw_latex: 'Fórmula en pizarra',
+      wb_draw_table: 'Tabla en pizarra',
+      wb_draw_line: 'Línea en pizarra',
+      wb_clear: 'Limpiar pizarra',
+      wb_delete: 'Eliminar elemento',
+      wb_close: 'Cerrar pizarra',
+      discussion: 'Discusión',
+    },
+    status: {
+      inputStreaming: 'Esperando',
+      inputAvailable: 'Ejecutando',
+      outputAvailable: 'Completado',
+      outputError: 'Error',
+      outputDenied: 'Denegado',
+      running: 'Ejecutando',
+      result: 'Completado',
+      error: 'Error',
+    },
+  },
+  agentBar: {
+    readyToLearn: '¿Listo para aprender juntos?',
+    expandedTitle: 'Configuración de roles del aula',
+    configTooltip: 'Haz clic para configurar los roles del aula',
+  },
+  proactiveCard: {
+    discussion: 'Discusión',
+    join: 'Unirse',
+    skip: 'Omitir',
+    pause: 'Pausar',
+    resume: 'Continuar',
+  },
+  voice: {
+    startListening: 'Entrada de voz',
+    stopListening: 'Detener grabación',
+  },
+} as const;

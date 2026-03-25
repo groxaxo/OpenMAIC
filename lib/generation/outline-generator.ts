@@ -19,6 +19,12 @@ import type { AICallFn, GenerationResult, GenerationCallbacks } from './pipeline
 import { createLogger } from '@/lib/logger';
 const log = createLogger('Generation');
 
+const getEmptyStateText = (language: string, type: 'images' | 'none') => {
+  if (language === 'zh-CN') return type === 'images' ? '无可用图片' : '无';
+  if (language === 'es-ES') return type === 'images' ? 'No hay imágenes disponibles' : 'Ninguno';
+  return type === 'images' ? 'No images available' : 'None';
+};
+
 /**
  * Generate scene outlines from user requirements
  * Now uses simplified UserRequirements with just requirement text and language
@@ -39,8 +45,7 @@ export async function generateSceneOutlinesFromRequirements(
   },
 ): Promise<GenerationResult<SceneOutline[]>> {
   // Build available images description for the prompt
-  let availableImagesText =
-    requirements.language === 'zh-CN' ? '无可用图片' : 'No images available';
+  let availableImagesText = getEmptyStateText(requirements.language, 'images');
   let visionImages: Array<{ id: string; src: string }> | undefined;
 
   if (pdfImages && pdfImages.length > 0) {
@@ -101,14 +106,11 @@ export async function generateSceneOutlinesFromRequirements(
     language: requirements.language,
     pdfContent: pdfText
       ? pdfText.substring(0, MAX_PDF_CONTENT_CHARS)
-      : requirements.language === 'zh-CN'
-        ? '无'
-        : 'None',
+      : getEmptyStateText(requirements.language, 'none'),
     availableImages: availableImagesText,
     userProfile: userProfileText,
     mediaGenerationPolicy,
-    researchContext:
-      options?.researchContext || (requirements.language === 'zh-CN' ? '无' : 'None'),
+    researchContext: options?.researchContext || getEmptyStateText(requirements.language, 'none'),
     // Server-side generation populates this via options; client-side populates via formatTeacherPersonaForPrompt
     teacherContext: options?.teacherContext || '',
   });

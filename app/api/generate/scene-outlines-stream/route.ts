@@ -96,6 +96,12 @@ function extractNewOutlines(buffer: string, alreadyParsed: number): SceneOutline
   return results;
 }
 
+const getEmptyStateText = (language: string, type: 'images' | 'none') => {
+  if (language === 'zh-CN') return type === 'images' ? '无可用图片' : '无';
+  if (language === 'es-ES') return type === 'images' ? 'No hay imágenes disponibles' : 'Ninguno';
+  return type === 'images' ? 'No images available' : 'None';
+};
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -120,8 +126,7 @@ export async function POST(req: NextRequest) {
     const hasVision = !!modelInfo?.capabilities?.vision;
 
     // Build prompt (same logic as generateSceneOutlinesFromRequirements)
-    let availableImagesText =
-      requirements.language === 'zh-CN' ? '无可用图片' : 'No images available';
+    let availableImagesText = getEmptyStateText(requirements.language, 'images');
     let visionImages: Array<{ id: string; src: string }> | undefined;
 
     if (pdfImages && pdfImages.length > 0) {
@@ -177,11 +182,9 @@ export async function POST(req: NextRequest) {
       language: requirements.language,
       pdfContent: pdfText
         ? pdfText.substring(0, MAX_PDF_CONTENT_CHARS)
-        : requirements.language === 'zh-CN'
-          ? '无'
-          : 'None',
+        : getEmptyStateText(requirements.language, 'none'),
       availableImages: availableImagesText,
-      researchContext: researchContext || (requirements.language === 'zh-CN' ? '无' : 'None'),
+      researchContext: researchContext || getEmptyStateText(requirements.language, 'none'),
       mediaGenerationPolicy,
       teacherContext,
     });

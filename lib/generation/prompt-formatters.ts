@@ -79,12 +79,21 @@ export function formatImageDescription(img: PdfImage, language: string): string 
   let dimInfo = '';
   if (img.width && img.height) {
     const ratio = (img.width / img.height).toFixed(2);
-    dimInfo = ` | 尺寸: ${img.width}×${img.height} (宽高比${ratio})`;
+    dimInfo =
+      language === 'zh-CN'
+        ? ` | 尺寸: ${img.width}×${img.height} (宽高比${ratio})`
+        : language === 'es-ES'
+          ? ` | Tamaño: ${img.width}×${img.height} (relación ${ratio})`
+          : ` | Size: ${img.width}×${img.height} (aspect ratio ${ratio})`;
   }
   const desc = img.description ? ` | ${img.description}` : '';
-  return language === 'zh-CN'
-    ? `- **${img.id}**: 来自PDF第${img.pageNumber}页${dimInfo}${desc}`
-    : `- **${img.id}**: from PDF page ${img.pageNumber}${dimInfo}${desc}`;
+  if (language === 'zh-CN') {
+    return `- **${img.id}**: 来自PDF第${img.pageNumber}页${dimInfo}${desc}`;
+  }
+  if (language === 'es-ES') {
+    return `- **${img.id}**: de la página ${img.pageNumber} del PDF${dimInfo}${desc}`;
+  }
+  return `- **${img.id}**: from PDF page ${img.pageNumber}${dimInfo}${desc}`;
 }
 
 /**
@@ -95,11 +104,20 @@ export function formatImagePlaceholder(img: PdfImage, language: string): string 
   let dimInfo = '';
   if (img.width && img.height) {
     const ratio = (img.width / img.height).toFixed(2);
-    dimInfo = ` | 尺寸: ${img.width}×${img.height} (宽高比${ratio})`;
+    dimInfo =
+      language === 'zh-CN'
+        ? ` | 尺寸: ${img.width}×${img.height} (宽高比${ratio})`
+        : language === 'es-ES'
+          ? ` | Tamaño: ${img.width}×${img.height} (relación ${ratio})`
+          : ` | Size: ${img.width}×${img.height} (aspect ratio ${ratio})`;
   }
-  return language === 'zh-CN'
-    ? `- **${img.id}**: PDF第${img.pageNumber}页的图片${dimInfo} [参见附图]`
-    : `- **${img.id}**: image from PDF page ${img.pageNumber}${dimInfo} [see attached]`;
+  if (language === 'zh-CN') {
+    return `- **${img.id}**: PDF第${img.pageNumber}页的图片${dimInfo} [参见附图]`;
+  }
+  if (language === 'es-ES') {
+    return `- **${img.id}**: imagen de la página ${img.pageNumber} del PDF${dimInfo} [ver adjunta]`;
+  }
+  return `- **${img.id}**: image from PDF page ${img.pageNumber}${dimInfo} [see attached]`;
 }
 
 /**
@@ -121,7 +139,7 @@ export function buildVisionUserContent(
       let dimInfo = '';
       if (img.width && img.height) {
         const ratio = (img.width / img.height).toFixed(2);
-        dimInfo = ` (${img.width}×${img.height}, 宽高比${ratio})`;
+        dimInfo = ` (${img.width}×${img.height}, aspect ratio ${ratio})`;
       }
       parts.push({ type: 'text', text: `\n**${img.id}**${dimInfo}:` });
       // Strip data URI prefix — AI SDK only accepts http(s) URLs or raw base64
